@@ -34,11 +34,11 @@ if num_frames <= 0
 else
     % Settings
     skip_simulations = false;
-    frames_per_iter = 10;
 
     % Figure settings
     [render_figure,save_sel,render_delay] = figure_settings();
 end
+frames_per_iter = 10;
 
 % Data select
 switch profile_sel
@@ -148,8 +148,8 @@ switch profile_sel
             'M_ary', 4, ...
             'EbN0', 18, ...
             'M', 64, ...
-            'N', 32, ...
-            'U', 1, ...
+            'N', 16, ...
+            'U', 2, ...
             'T', 1 / 15000, ...
             'Fc', 4e9, ...
             'vel', 500, ...
@@ -406,9 +406,9 @@ if render_figure
     clf
     switch vis_type
         case "figure"
-            gen_figure_v2(conn_local,default_parameters,configs,figure_data);
+            gen_figure_v2(conn_local,default_parameters,system_names,configs,figure_data);
         case "hexgrid"
-            gen_hex_layout(conn_local,default_parameters,configs,figure_data);
+            gen_hex_layout(conn_local,default_parameters,system_names,configs,figure_data);
     end
 end
 
