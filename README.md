@@ -1,4 +1,4 @@
-# TODDM_simulator
+# TODDM Simulator (MATLAB, SQL)
 A MySQL-MATLAB simulator for calculating error rates in OFDM, OTFS, ODDM and TODDM.
 
 ## Instructions
