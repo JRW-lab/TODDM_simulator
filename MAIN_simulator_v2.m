@@ -1,4 +1,4 @@
-%% MAIN_simulator_v2.m
+%% Start
 % This file tests the BER/SER/FER for a few wireless communications
 % systems (supported: OTFS, ODDM, TODDM), with settings specified in each
 % profile. Data is saved in a MySQL server so a password is required.
@@ -49,7 +49,7 @@ else
     [render_figure,save_sel,render_delay] = figure_settings();
 end
 
-% Data select
+%% Configurations
 switch profile_sel
     case 1
         % PROFILE 1
@@ -246,6 +246,8 @@ switch profile_sel
         line_colors = {};
 end
 
+%% Simulation setup
+
 % Find function files, get parameter list, modify sim data as needed
 var_names = fieldnames(default_parameters);
 prvr_len = length(primary_vals);
@@ -356,8 +358,8 @@ for primvar_sel = 1:prvr_len
     end
 end
 
+%% Simulation loop
 
-% SIM LOOP
 if ~skip_simulations
 
     % Set up connection to MySQL server
@@ -452,6 +454,8 @@ if ~skip_simulations
         end
     end
 end
+
+%% Figure generation
 
 % Set up figure data
 figure_data.data_type = data_type;
