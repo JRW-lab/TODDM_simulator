@@ -7,29 +7,26 @@ function sim_save(save_data,conn,table_name,current_frames,parameters)
 switch save_data.priority
     case "mysql"
         if save_data.save_mysql
-            sim_result = mysql_load(conn,table_name,paramHash);
+            T = mysql_load(conn_local,table_name,"*");
         elseif save_data.save_excel
             try
                 T = readtable(save_data.excel_path, 'TextType', 'string');
-                sim_result = T(T.param_hash == paramHash, :);
             catch
                 T = table;
-                sim_result = [];
             end
         end
     case "local"
         if save_data.save_excel
             try
                 T = readtable(save_data.excel_path, 'TextType', 'string');
-                sim_result = T(T.param_hash == paramHash, :);
             catch
                 T = table;
-                sim_result = [];
             end
         elseif save_data.save_mysql
-            sim_result = mysql_load(conn,table_name,paramHash);
+            T = mysql_load(conn_local,table_name,"*");
         end
 end
+sim_result = T(T.param_hash == paramHash, :);
 
 if ~isempty(sim_result)
     % Find new frame count to simulate

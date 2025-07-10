@@ -1,4 +1,31 @@
-function gen_figure_v2(conn,default_parameters,system_names,configs,figure_data)
+function gen_figure_v2(save_data,conn,table_name,default_parameters,system_names,configs,figure_data)
+
+% Select MySQL table
+identifier = "system_name";
+
+% Load data from DB and set new frame count
+switch save_data.priority
+    case "mysql"
+        if save_data.save_mysql
+            T = mysql_load(conn_local,table_name,"*");
+        elseif save_data.save_excel
+            try
+                T = readtable(save_data.excel_path, 'TextType', 'string');
+            catch
+                T = table;
+            end
+        end
+    case "local"
+        if save_data.save_excel
+            try
+                T = readtable(save_data.excel_path, 'TextType', 'string');
+            catch
+                T = table;
+            end
+        elseif save_data.save_mysql
+            T = mysql_load(conn_local,table_name,"*");
+        end
+end
 
 % Import settings
 data_type = figure_data.data_type;
@@ -17,19 +44,7 @@ line_val = 2;
 mark_val = 10;
 font_val = 16;
 
-% Select MySQL table
-switch conn.DataSource
-    case "comm_database"
-        identifier = "system_name";
-        table_name = "sim_results_v2";
-        var_start = 1;
-    case "med_database"
-        identifier = "project_name";
-        table_name = "lrm_results_v2";
-        var_start = 1;
-end
-
-% SIM LOOP
+% Load loop
 var_names = fieldnames(default_parameters);
 results_mat = zeros(length(primary_vals),length(configs));
 for primvar_sel = 1:length(primary_vals)
@@ -40,16 +55,9 @@ for primvar_sel = 1:length(primary_vals)
     % Go through each settings profile
     for sel = 1:length(configs)
 
-        % Define label of result
-        if identifier == "system_name"
-            result_label = system_names{primvar_sel,sel};
-        else
-            result_label = "BPDB";
-        end
-
         % Populate parameters from configs or default_parameters
         params_inst = struct();
-        for var_sel = var_start:length(var_names)
+        for var_sel = 1:length(var_names)
             var_name = var_names{var_sel};
             if isfield(configs{sel}, var_name)
                 value = configs{sel}.(var_name);
@@ -62,70 +70,53 @@ for primvar_sel = 1:length(primary_vals)
         end
 
         % Edit parameters file if comm sim
-        if identifier == "system_name"
-            switch result_label
-                case "TODDM"
-
-                    % Make number of symbols per frame
-                    syms_per_f = params_inst.M*params_inst.N*params_inst.U;
-                    U = params_inst.U;
-
-                case "ODDM"
-
-                    % Correct parameters list, make number of symbols per frame
-                    params_inst = rmfield(params_inst, 'U');
-                    syms_per_f = params_inst.M*params_inst.N;
-                    U = 1;
-
-                case "OTFS"
-
-                    % Correct parameters list, make number of symbols per frame
-                    params_inst = rmfield(params_inst, 'U');
-                    syms_per_f = params_inst.M*params_inst.N;
-                    U = 1;
-
-                case "OFDM"
-
-                    % Correct parameters list, make number of symbols per frame
-                    params_inst = rmfield(params_inst, 'U');
-                    params_inst = rmfield(params_inst, 'N');
-                    syms_per_f = params_inst.M;
-                    U = 1;
-
-            end
+        switch params_inst.system_name
+            case "TODDM"
+                % Make number of symbols per frame
+                syms_per_f = params_inst.M*params_inst.N*params_inst.U;
+                U = params_inst.U;
+            case "ODDM"
+                % Correct parameters list, make number of symbols per frame
+                params_inst = rmfield(params_inst, 'U');
+                syms_per_f = params_inst.M*params_inst.N;
+                U = 1;
+            case "OTFS"
+                % Correct parameters list, make number of symbols per frame
+                params_inst = rmfield(params_inst, 'U');
+                syms_per_f = params_inst.M*params_inst.N;
+                U = 1;
+            case "OFDM"
+                % Correct parameters list, make number of symbols per frame
+                params_inst = rmfield(params_inst, 'U');
+                params_inst = rmfield(params_inst, 'N');
+                syms_per_f = params_inst.M;
+                U = 1;
         end
 
         % Serialize to JSON for DB
         [~,paramHash] = jsonencode_sorted(params_inst);
 
         % Load data from DB
-        switch conn.DataSource
-            case "comm_database"
-                DB_data = mysql_load(conn,table_name,paramHash);
-            case "med_database"
-                sqlquery = sprintf("SELECT * FROM %s WHERE param_hash = '%s' AND %s = '%s'", ...
-                    table_name, paramHash, identifier, result_label);
-                DB_data = fetch(conn, sqlquery);
-        end
+        sim_result = T(T.param_hash == paramHash, :);
 
         % Select data to extract
-        results_inst = jsondecode(DB_data.metrics{1});
+        metrics_loaded = jsondecode(sim_result.metrics{1});
         switch data_type
             case "BER"
-                results_val = results_inst.BER;
+                results_val = metrics_loaded.BER;
             case "SER"
-                results_val = results_inst.SER;
+                results_val = metrics_loaded.SER;
             case "FER"
-                results_val = results_inst.FER;
+                results_val = metrics_loaded.FER;
             case "Thr"
                 frame_duration = params_inst.N * params_inst.T;
                 bandwidth_hz = params_inst.M * U / params_inst.T;
-                results_val = (log2(params_inst.M_ary) * syms_per_f * (1 - results_inst.FER)) / (frame_duration * bandwidth_hz);
+                results_val = (log2(params_inst.M_ary) * syms_per_f * (1 - metrics_loaded.FER)) / (frame_duration * bandwidth_hz);
             case "Cap"
-                results_val = results_inst.C / 1000;
+                results_val = metrics_loaded.C / 1000;
             case "accy"
                 level_view = figure_data.level_view;
-                results_val = results_inst.(level_view).(data_type);
+                results_val = metrics_loaded.(level_view).(data_type);
         end
 
         % Add result to stack

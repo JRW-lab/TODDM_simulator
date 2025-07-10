@@ -246,8 +246,6 @@ switch profile_sel
         line_colors = {};
 end
 
-
-
 % Find function files, get parameter list, modify sim data as needed
 var_names = fieldnames(default_parameters);
 prvr_len = length(primary_vals);
@@ -276,6 +274,30 @@ end
 % Ensure the folder exists
 if ~isfolder(save_data.excel_folder)
     mkdir(save_data.excel_folder);
+end
+
+% Check already-saved results
+switch save_data.priority
+    case "mysql"
+        if save_data.save_mysql
+            T = mysql_load(conn_local,table_name,"*");
+        elseif save_data.save_excel
+            try
+                T = readtable(save_data.excel_path, 'TextType', 'string');
+            catch
+                T = table;
+            end
+        end
+    case "local"
+        if save_data.save_excel
+            try
+                T = readtable(save_data.excel_path, 'TextType', 'string');
+            catch
+                T = table;
+            end
+        elseif save_data.save_mysql
+            T = mysql_load(conn_local,table_name,"*");
+        end
 end
 
 % Make parameters
@@ -322,32 +344,7 @@ for primvar_sel = 1:prvr_len
 
         % Load data from DB
         [~,paramHash] = jsonencode_sorted(parameters);
-        switch save_data.priority
-            case "mysql"
-                if save_data.save_mysql
-                    sim_result = mysql_load(conn_local,table_name,paramHash);
-                elseif save_data.save_excel
-                    try
-                        T = readtable(save_data.excel_path, 'TextType', 'string');
-                        sim_result = T(T.param_hash == paramHash, :);
-                    catch
-                        T = table;
-                        sim_result = [];
-                    end
-                end
-            case "local"
-                if save_data.save_excel
-                    try
-                        T = readtable(save_data.excel_path, 'TextType', 'string');
-                        sim_result = T(T.param_hash == paramHash, :);
-                    catch
-                        T = table;
-                        sim_result = [];
-                    end
-                elseif save_data.save_mysql
-                    sim_result = mysql_load(conn_local,table_name,paramHash);
-                end
-        end
+        sim_result = T(T.param_hash == paramHash, :);
 
         % Set prior frames
         if ~isempty(sim_result)
@@ -474,7 +471,7 @@ if render_figure
     clf
     switch vis_type
         case "figure"
-            gen_figure_v3(save_data,conn_local,table_name,default_parameters,system_names,configs,figure_data);
+            gen_figure_v2(save_data,conn_local,table_name,default_parameters,system_names,configs,figure_data);
         case "hexgrid"
             gen_hex_layout(conn_local,default_parameters,system_names,configs,figure_data);
     end
