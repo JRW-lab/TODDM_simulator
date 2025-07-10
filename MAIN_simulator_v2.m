@@ -7,6 +7,7 @@
 clc; clear;
 
 % Settings
+use_parellelization = false;
 frames_per_iter = 10;
 create_database_tables = false;
 save_data.priority = "local";
@@ -14,9 +15,9 @@ save_data.save_mysql = false;
 save_data.save_excel = true;
 
 % Set paths and data
-addpath(fullfile(pwd, '..\Common Functions'));
+addpath(fullfile(pwd, 'Common Functions'));
 addpath(fullfile(pwd, 'Functions'));
-javaaddpath('..\mysql-connector-j-8.4.0.jar');
+javaaddpath('mysql-connector-j-8.4.0.jar');
 dbname     = 'comm_database';
 table_name = "sim_results_v2";
 save_data.excel_folder = 'Data';
@@ -358,17 +359,22 @@ for primvar_sel = 1:prvr_len
     end
 end
 
-% Set up connection to MySQL server
-conn_thrall = conn_local; % UNCOMMENT TO USE LINEAR SOLVER
-% if isempty(gcp('nocreate')) % UNCOMMENT TO USE PARALLELIZATION
-%     poolCluster = parcluster('local');
-%     maxCores = poolCluster.NumWorkers;  % Get the max number of workers available
-%     parpool(poolCluster, maxCores);     % Start a parallel pool with all available workers
-% end
-% parfevalOnAll(@() javaaddpath('..\..\mysql-connector-j-8.4.0.jar'), 0);
 
 % SIM LOOP
 if ~skip_simulations
+
+    % Set up connection to MySQL server
+    if use_parellelization
+        if isempty(gcp('nocreate'))
+            poolCluster = parcluster('local');
+            maxCores = poolCluster.NumWorkers;  % Get the max number of workers available
+            parpool(poolCluster, maxCores);     % Start a parallel pool with all available workers
+        end
+        parfevalOnAll(@() javaaddpath('mysql-connector-j-8.4.0.jar'), 0);
+    else
+        conn_thrall = conn_local;
+    end
+
     for iter = 1:num_iters
 
         % Set current frame goal
@@ -378,44 +384,74 @@ if ~skip_simulations
             current_frames = num_frames;
         end
 
-        % Go through each settings profile
-        for primvar_sel = 1:prvr_len % UNCOMMENT TO USE LINEAR SOLVER
-        % parfor primvar_sel = 1:prvr_len % UNCOMMENT TO USE PARALLELIZATION
+        if use_parellelization
 
-            for sel = 1:conf_len
+            % Go through each settings profile
+            parfor primvar_sel = 1:prvr_len % UNCOMMENT TO USE PARALLELIZATION
+                for sel = 1:conf_len
 
-                % Select parameters
-                parameters = params_cell{primvar_sel,sel};
+                    % Select parameters
+                    parameters = params_cell{primvar_sel,sel};
 
-                % Continue to simulate if need more frames
-                if current_frames > prior_frames(primvar_sel,sel)
+                    % Continue to simulate if need more frames
+                    if current_frames > prior_frames(primvar_sel,sel)
 
-                    % % Set up connection to MySQL server
-                    % conn_thrall = mysql_login(dbname); % UNCOMMENT TO USE PARALLELIZATION
+                        % Set up connection to MySQL server
+                        conn_thrall = mysql_login(dbname); % UNCOMMENT TO USE PARALLELIZATION
 
-                    % Notify main thread of progress
-                    progress_bar_data = parameters;
-                    progress_bar_data.system_name = system_names{primvar_sel,sel};
-                    progress_bar_data.num_iters = num_iters;
-                    progress_bar_data.iter = iter;
-                    progress_bar_data.primvar_sel = primvar_sel;
-                    progress_bar_data.sel = sel;
-                    progress_bar_data.prvr_len = prvr_len;
-                    progress_bar_data.conf_len = conf_len;
-                    progress_bar_data.current_frames = current_frames;
-                    progress_bar_data.num_frames = num_frames;
-                    send(dq, progress_bar_data);
+                        % Notify main thread of progress
+                        progress_bar_data = parameters;
+                        progress_bar_data.system_name = system_names{primvar_sel,sel};
+                        progress_bar_data.num_iters = num_iters;
+                        progress_bar_data.iter = iter;
+                        progress_bar_data.primvar_sel = primvar_sel;
+                        progress_bar_data.sel = sel;
+                        progress_bar_data.prvr_len = prvr_len;
+                        progress_bar_data.conf_len = conf_len;
+                        progress_bar_data.current_frames = current_frames;
+                        progress_bar_data.num_frames = num_frames;
+                        send(dq, progress_bar_data);
 
-                    % Simulate under current settings
-                    sim_save(save_data,conn_thrall,table_name,current_frames,parameters);
+                        % Simulate under current settings
+                        sim_save(save_data,conn_thrall,table_name,current_frames,parameters);
 
-                    % % Close connection instance
-                    % close(conn_thrall) % UNCOMMENT TO USE PARALLELIZATION
+                        % Close connection instance
+                        close(conn_thrall)
 
+                    end
                 end
-
             end
-        
+        else
+
+            % Go through each settings profile
+            for primvar_sel = 1:prvr_len
+                for sel = 1:conf_len
+
+                    % Select parameters
+                    parameters = params_cell{primvar_sel,sel};
+
+                    % Continue to simulate if need more frames
+                    if current_frames > prior_frames(primvar_sel,sel)
+
+                        % Notify main thread of progress
+                        progress_bar_data = parameters;
+                        progress_bar_data.system_name = system_names{primvar_sel,sel};
+                        progress_bar_data.num_iters = num_iters;
+                        progress_bar_data.iter = iter;
+                        progress_bar_data.primvar_sel = primvar_sel;
+                        progress_bar_data.sel = sel;
+                        progress_bar_data.prvr_len = prvr_len;
+                        progress_bar_data.conf_len = conf_len;
+                        progress_bar_data.current_frames = current_frames;
+                        progress_bar_data.num_frames = num_frames;
+                        send(dq, progress_bar_data);
+
+                        % Simulate under current settings
+                        sim_save(save_data,conn_thrall,table_name,current_frames,parameters);
+
+                    end
+                end
+            end
         end
     end
 end
