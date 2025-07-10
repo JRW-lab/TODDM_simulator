@@ -8,11 +8,10 @@ clc; clear;
 
 % Settings
 use_parellelization = false;
-frames_per_iter = 10;
-create_database_tables = false;
-save_data.priority = "local";
-save_data.save_mysql = false;
+save_data.priority = "local"; % local or mysql
 save_data.save_excel = true;
+save_data.save_mysql = false;
+create_database_tables = false;
 
 % Set paths and data
 addpath(fullfile(pwd, 'Common Functions'));
@@ -35,6 +34,7 @@ profile_names = {
 [profile_sel,num_frames] = profile_select(profile_names,true);
 
 % Set number of frames per iteration
+frames_per_iter = 10;
 if num_frames <= 0
     % Settings
     render_figure = true;
@@ -267,8 +267,8 @@ else
     conn_local = [];
 end
 if create_database_tables
-    exec(conn, fileread('comm_database_sim_results.sql'));
-    exec(conn, fileread('comm_database_system_flags.sql'));
+    exec(conn, fileread('mysql_tables.sql'));
+    input("Please import the tables into MySQL (or an SQL software)...","s")
 end
 
 % Ensure the folder exists
