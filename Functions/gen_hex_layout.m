@@ -1,10 +1,4 @@
-function gen_hex_layout(conn,default_parameters,system_names,configs,figure_data)
-
-% Import settings
-data_type = figure_data.data_type;
-primary_var = figure_data.primary_var;
-primary_vals = figure_data.primary_vals;
-save_sel = figure_data.save_sel;
+function gen_hex_layout(save_data,conn,table_name,default_parameters,configs,figure_data)
 
 % Figure settings
 figures_folder = 'Figures';
@@ -16,93 +10,72 @@ tile_scale = 1.6;
 m_offset = 0.1;
 u_linelength = 1.5;
 u_offset = 0.1;
-% colorbar_loc = [.1, 0.1, 0.02, 0.8];
 
-% Select MySQL table
-if data_type == "Cap"
-    table_prefix = "cap";
-else
-    table_prefix = "sim";
+% Load data from DB and set new frame count
+switch save_data.priority
+    case "mysql"
+        if save_data.save_mysql
+            T = mysql_load(conn,table_name,"*");
+        elseif save_data.save_excel
+            try
+                T = readtable(save_data.excel_path, 'TextType', 'string');
+            catch
+                T = table;
+            end
+        end
+    case "local"
+        if save_data.save_excel
+            try
+                T = readtable(save_data.excel_path, 'TextType', 'string');
+            catch
+                T = table;
+            end
+        elseif save_data.save_mysql
+            T = mysql_load(conn,table_name,"*");
+        end
 end
 
-% SIM LOOP
+% Import settings
+data_type = figure_data.data_type;
+primary_var = figure_data.primary_var;
+primary_vals = figure_data.primary_vals;
+save_sel = figure_data.save_sel;
+
+% Load loop
 var_names = fieldnames(default_parameters);
 results_vec = zeros(length(primary_vals),length(configs));
 for primvar_sel = 1:length(primary_vals)
 
     % Set primary variable
-    eval(primary_var + "_inst = " + primary_vals(primvar_sel) + ";");
+    primval_sel = primary_vals(primvar_sel);
 
     % Go through each settings profile
     for sel = 1:length(configs)
 
-        % set all other variables
+        % Populate parameters from configs or default_parameters
+        params_inst = struct();
         for var_sel = 1:length(var_names)
-            if isfield(configs{sel}, var_names{var_sel}) % Set secondary variables
-                eval(string(var_names{var_sel})+"_inst = configs{sel}."+string(var_names{var_sel})+";")
-            elseif string(var_names{var_sel}) ~= primary_var % Set generic variables
-                eval(string(var_names{var_sel})+"_inst = default_parameters."+string(var_names{var_sel})+";")
+            var_name = var_names{var_sel};
+            if isfield(configs{sel}, var_name)
+                value = configs{sel}.(var_name);
+            elseif ~strcmp(var_name, primary_var)
+                value = default_parameters.(var_name);
+            else
+                value = primval_sel;
             end
+            params_inst.(var_name) = value;
         end
 
-        % Make current parameters
-        params_inst = struct( ...
-            'M_ary', M_ary_inst, ...
-            'EbN0', EbN0_inst, ...
-            'M', M_inst, ...
-            'N', N_inst, ...
-            'U', U_inst, ...
-            'T', T_inst, ...
-            'Fc', Fc_inst, ...
-            'vel', vel_inst, ...
-            'shape', shape_inst, ...
-            'alpha', alpha_inst, ...
-            'Q', Q_inst...
-            );
-
-        % Load from hash
-        switch system_name_inst
-            case "TODDM"
-
-                % Make number of symbols per frame
-                syms_per_f = params_inst.M*params_inst.N*params_inst.U;
-                U = params_inst.U;
-
-            case "ODDM"
-
-                % Correct parameters list, make number of symbols per frame
-                params_inst = rmfield(params_inst, 'U');
-                syms_per_f = params_inst.M*params_inst.N;
-                U = 1;
-
-            case "OTFS"
-
-                % Correct parameters list, make number of symbols per frame
-                params_inst = rmfield(params_inst, 'U');
-                syms_per_f = params_inst.M*params_inst.N;
-                U = 1;
-
-            case "OFDM"
-
-                % Correct parameters list, make number of symbols per frame
-                params_inst = rmfield(params_inst, 'U');
-                params_inst = rmfield(params_inst, 'N');
-                syms_per_f = params_inst.M;
-                U = 1;
-
-        end
-
-        % Serialize to JSON for DB
-        paramsJSON  = jsonencode(params_inst);
-        paramHash = string(DataHash(paramsJSON,'SHA-256'));
+        % Make number of symbols per frame
+        syms_per_f = params_inst.M*params_inst.N*params_inst.U;
+        U = params_inst.U;
 
         % Load data from DB
-        sqlquery = sprintf("SELECT * FROM %s_results WHERE param_hash = '%s' AND system_name = '%s'", ...
-            table_prefix, paramHash, char(system_name_inst));
-        DB_data = fetch(conn, sqlquery);
+        [~,paramHash] = jsonencode_sorted(params_inst);
+        sim_result = T(string(T.param_hash) == paramHash, :);
 
         % Select data to extract
-        results_inst = jsondecode(DB_data.metrics{1});
+        results_inst = jsondecode(sim_result.metrics{1});
         switch data_type
             case "BER"
                 results_val = results_inst.BER;
@@ -111,7 +84,6 @@ for primvar_sel = 1:length(primary_vals)
             case "FER"
                 results_val = results_inst.FER;
             case "Thr"
-                % results_val = log2(params_inst.M_ary) * syms_per_f * (1 - results_inst.FER) / 1000;
                 frame_duration = params_inst.N * params_inst.T;
                 bandwidth_hz = params_inst.M * U / params_inst.T;
                 results_val = (log2(params_inst.M_ary) * syms_per_f * (1 - results_inst.FER)) / (frame_duration * bandwidth_hz);

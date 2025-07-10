@@ -8,9 +8,9 @@ clc; clear;
 
 % Settings
 use_parellelization = false;
-save_data.priority = "local"; % local or mysql
+save_data.priority = "mysql"; % local or mysql
 save_data.save_excel = true;
-save_data.save_mysql = false;
+save_data.save_mysql = true;
 create_database_tables = false;
 
 % Set paths and data
@@ -346,7 +346,7 @@ for primvar_sel = 1:prvr_len
 
         % Load data from DB
         [~,paramHash] = jsonencode_sorted(parameters);
-        sim_result = T(T.param_hash == paramHash, :);
+        sim_result = T(string(T.param_hash) == paramHash, :);
 
         % Set prior frames
         if ~isempty(sim_result)
@@ -475,9 +475,9 @@ if render_figure
     clf
     switch vis_type
         case "figure"
-            gen_figure_v2(save_data,conn_local,table_name,default_parameters,system_names,configs,figure_data);
+            gen_figure_v2(save_data,conn_local,table_name,default_parameters,configs,figure_data);
         case "hexgrid"
-            gen_hex_layout(conn_local,default_parameters,system_names,configs,figure_data);
+            gen_hex_layout(save_data,conn_local,table_name,default_parameters,configs,figure_data);
     end
 end
 

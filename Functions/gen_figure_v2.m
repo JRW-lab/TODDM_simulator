@@ -1,13 +1,18 @@
-function gen_figure_v2(save_data,conn,table_name,default_parameters,system_names,configs,figure_data)
+function gen_figure_v2(save_data,conn,table_name,default_parameters,configs,figure_data)
 
-% Select MySQL table
+% Figure settings
+render_title = false;
+figures_folder = 'Figures';
+line_val = 2;
+mark_val = 10;
+font_val = 16;
 identifier = "system_name";
 
 % Load data from DB and set new frame count
 switch save_data.priority
     case "mysql"
         if save_data.save_mysql
-            T = mysql_load(conn_local,table_name,"*");
+            T = mysql_load(conn,table_name,"*");
         elseif save_data.save_excel
             try
                 T = readtable(save_data.excel_path, 'TextType', 'string');
@@ -23,7 +28,7 @@ switch save_data.priority
                 T = table;
             end
         elseif save_data.save_mysql
-            T = mysql_load(conn_local,table_name,"*");
+            T = mysql_load(conn,table_name,"*");
         end
 end
 
@@ -31,18 +36,11 @@ end
 data_type = figure_data.data_type;
 primary_var = figure_data.primary_var;
 primary_vals = figure_data.primary_vals;
-title_vars = figure_data.title_vars;
+% title_vars = figure_data.title_vars;
 legend_vec = figure_data.legend_vec;
 line_styles = figure_data.line_styles;
 line_colors = figure_data.line_colors;
 save_sel = figure_data.save_sel;
-
-% Figure settings
-render_title = false;
-figures_folder = 'Figures';
-line_val = 2;
-mark_val = 10;
-font_val = 16;
 
 % Load loop
 var_names = fieldnames(default_parameters);
@@ -93,11 +91,9 @@ for primvar_sel = 1:length(primary_vals)
                 U = 1;
         end
 
-        % Serialize to JSON for DB
-        [~,paramHash] = jsonencode_sorted(params_inst);
-
         % Load data from DB
-        sim_result = T(T.param_hash == paramHash, :);
+        [~,paramHash] = jsonencode_sorted(params_inst);
+        sim_result = T(string(T.param_hash) == paramHash, :);
 
         % Select data to extract
         metrics_loaded = jsondecode(sim_result.metrics{1});

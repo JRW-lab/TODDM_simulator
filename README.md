@@ -14,12 +14,10 @@ The code included here is lengthy and may be confusing so here is an overview of
 4. Steps 2 and 3 are repeated until all configurations have the sufficient number of frames for figure rendering.
 5. gen_figure_v2 or gen_hex_layout.m is run to generate a figure and save, if specified.
 
-NOTE: At of time of writing, gen_hex_layout.m does not support loading local simulation results.
-
 ## Configuration Setup
 In MAIN_simulator_v2.m, there is a large section named Configurations. There you will see several pre-configured profiles to use as reference for your own profile. Profiles work by defining the primary variable for a parametric sweep and the corresponding range. If a figure is being rendered, this is the range of the plot, and each line of the parameter 'configs' specifies a line on the plot, and each line has its own custom parameters separate from those specified in default_parameters. Once all the configs are defined, the user can be specific in defining the appearance of plots using several customizable parameters.
 
-Hexgrids offer a more robust way of viewing tradeoffs being variables with TODDM (see paper this code is a reference for). Hexgrid plots function a bit differently, where there is no parametric sweep and 'configs' is defined by a special function. There also aren't any visualization settings, as a simple colorbar is all you can really change and the current one feels more fitting and easiest to read.
+Hexgrids offer a more robust way of viewing tradeoffs being variables with TODDM (see paper this code is a reference for), and since they are specifically designed, they will ONLY work with TODDM systems ("system_name = 'TODDM'"). Hexgrid plots function a bit differently, where there is no parametric sweep and 'configs' is defined by a special function. There also aren't any visualization settings, as a simple colorbar is all you can really change and the current one feels more fitting and easiest to read.
 
 ## Further Questions
 For any questions please contact jrwimer@uark.edu.
