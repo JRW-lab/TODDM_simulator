@@ -1,0 +1,9 @@
+# Ignore unneeded folders
+Figures/
+Final Results/
+Legacy/
+Pre-rendered Lookup Tables/
+
+% Ignore specific files
+configurations.m
+test.m
