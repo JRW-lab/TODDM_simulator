@@ -17,7 +17,8 @@ create_database_tables = false;
 addpath(fullfile(pwd, 'Common Functions'));
 addpath(fullfile(pwd, 'Functions'));
 javaaddpath('mysql-connector-j-8.4.0.jar');
-dbname     = 'comm_database';
+% dbname     = 'comm_database';
+dbname     = 'nope';
 table_name = "sim_results_v2";
 save_data.excel_folder = 'Data';
 save_data.excel_name = table_name;
@@ -263,7 +264,7 @@ total_tasks = prvr_len*conf_len*num_iters;
 afterEach(dq, @updateProgressBar);
 
 % Set up connection to MySQL server
-if save_data.save_excel
+if save_data.save_mysql
     conn_local = mysql_login(dbname);
 else
     conn_local = [];
