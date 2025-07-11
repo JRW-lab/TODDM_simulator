@@ -8,9 +8,9 @@ clc; clear;
 
 % Settings
 use_parellelization = false;
-save_data.priority = "mysql"; % local or mysql
+save_data.priority = "local"; % local or mysql
 save_data.save_excel = true;
-save_data.save_mysql = true;
+save_data.save_mysql = false;
 create_database_tables = false;
 
 % Set paths and data
