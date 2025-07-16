@@ -39,14 +39,11 @@ if num_frames <= 0
     % Settings
     render_figure = true;
     save_sel = true;
-    render_delay = 5;
     skip_simulations = true;
 else
     % Settings
     skip_simulations = false;
-
-    % Figure settings
-    [render_figure,save_sel,render_delay] = figure_settings();
+    [render_figure,save_sel] = figure_settings();
 end
 
 %% Configurations
@@ -268,12 +265,13 @@ if save_data.save_mysql
     if create_database_tables
         % Set up MySQL commands
         sql_table = [
-            "CREATE TABLE sim_results (" ...
-            "param_hash CHAR(64) PRIMARY KEY, " ...
+            "CREATE TABLE " + table_name + " (" ...
+            "param_hash CHAR(64), " ...
             "parameters JSON, " ...
             "metrics JSON, " ...
-            "frames_simulated BIGINT, " ...
-            "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" ...
+            "iteration INT NOT NULL, " ...
+            "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " ...
+            "PRIMARY KEY (param_hash, iteration)" ...
             ");"
             ];
         sql_flags = [
@@ -285,9 +283,18 @@ if save_data.save_mysql
         sql_main_flag = "INSERT INTO system_flags (id, flag_value) VALUES (0, 0);";
 
         % Execute commands
-        execute(conn, sql_table);
-        execute(conn, sql_flags);
-        execute(conn, sql_main_flag);
+        try
+            execute(conn_local, join(sql_table));
+        catch
+        end
+        try
+            execute(conn_local, join(sql_flags));
+        catch
+        end
+        try
+            execute(conn_local, join(sql_main_flag));
+        catch
+        end
     end
 else
     conn_local = [];
