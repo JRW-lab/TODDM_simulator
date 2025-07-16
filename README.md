@@ -1,9 +1,9 @@
-# TODDM Simulator (MATLAB, SQL)
+# TODDM Simulator (MATLAB with SQL compatibility)
 A MATLAB-based simulator for calculating error rates in OTFS, ODDM and TODDM.
 Results can be stored either locally in an Excel file or in an SQL database.
 
 ## Introduction
-To use this code, you must run it in MATLAB 2024b or higher. The parallelization toolbox is used in the current implementation but can be turned "off" in settings. Additionally, the database toolbox and several others are required, both to simulate and to upload simulation results to MySQL. SQL files are included to run in order to automatially create the needed tables for MATLAB to read/write from.
+To use this code, you must run it in MATLAB 2024b or higher. The parallelization toolbox is used in the current implementation but can be turned "off" in settings. Additionally, the database toolbox and several others are required, both to simulate and to upload simulation results to MySQL. Commands are included in the code to automatially create the needed tables for MySQL, so long as the correct database is selected.
 
 ## Instructions
 The code included here is lengthy and may be confusing so here is an overview of how it works:

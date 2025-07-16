@@ -12,13 +12,13 @@ save_data.priority = "local"; % local or mysql
 save_data.save_excel = true;
 save_data.save_mysql = false;
 create_database_tables = false;
+dbname     = 'comm_database';
+table_name = "sim_results";
 
 % Set paths and data
 addpath(fullfile(pwd, 'Common Functions'));
 addpath(fullfile(pwd, 'Functions'));
 javaaddpath('mysql-connector-j-8.4.0.jar');
-dbname     = 'comm_database';
-table_name = "sim_results_v2";
 save_data.excel_folder = 'Data';
 save_data.excel_name = table_name;
 save_data.excel_path = fullfile(save_data.excel_folder,save_data.excel_name + ".xlsx");
