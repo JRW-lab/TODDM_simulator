@@ -26,7 +26,11 @@ switch save_data.priority
             T = mysql_load(conn_local,table_name,"*");
         end
 end
-sim_result = T(string(T.param_hash) == paramHash, :);
+try
+    sim_result = T(string(T.param_hash) == paramHash, :);
+catch
+    sim_result = [];
+end
 
 if ~isempty(sim_result)
     % Find new frame count to simulate

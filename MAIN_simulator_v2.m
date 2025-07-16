@@ -265,12 +265,32 @@ afterEach(dq, @updateProgressBar);
 % Set up connection to MySQL server
 if save_data.save_mysql
     conn_local = mysql_login(dbname);
+    if create_database_tables
+        % Set up MySQL commands
+        sql_table = [
+            "CREATE TABLE sim_results (" ...
+            "param_hash CHAR(64) PRIMARY KEY, " ...
+            "parameters JSON, " ...
+            "metrics JSON, " ...
+            "frames_simulated BIGINT, " ...
+            "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" ...
+            ");"
+            ];
+        sql_flags = [
+            "CREATE TABLE system_flags (" ...
+            "id INT AUTO_INCREMENT PRIMARY KEY, " ...
+            "flag_value TINYINT(1) DEFAULT 0" ...
+            ");"
+            ];
+        sql_main_flag = "INSERT INTO system_flags (id, flag_value) VALUES (0, 0);";
+
+        % Execute commands
+        execute(conn, sql_table);
+        execute(conn, sql_flags);
+        execute(conn, sql_main_flag);
+    end
 else
     conn_local = [];
-end
-if create_database_tables
-    exec(conn, fileread('mysql_tables.sql'));
-    input("Please import the tables into MySQL (or an SQL software)...","s")
 end
 
 % Ensure the folder exists
@@ -346,7 +366,11 @@ for primvar_sel = 1:prvr_len
 
         % Load data from DB
         [~,paramHash] = jsonencode_sorted(parameters);
-        sim_result = T(string(T.param_hash) == paramHash, :);
+        try
+            sim_result = T(string(T.param_hash) == paramHash, :);
+        catch
+            sim_result = [];
+        end
 
         % Set prior frames
         if ~isempty(sim_result)
@@ -386,7 +410,7 @@ if ~skip_simulations
         if use_parellelization
 
             % Go through each settings profile
-            parfor primvar_sel = 1:prvr_len % UNCOMMENT TO USE PARALLELIZATION
+            parfor primvar_sel = 1:prvr_len
                 for sel = 1:conf_len
 
                     % Select parameters
@@ -396,7 +420,7 @@ if ~skip_simulations
                     if current_frames > prior_frames(primvar_sel,sel)
 
                         % Set up connection to MySQL server
-                        conn_thrall = mysql_login(dbname); % UNCOMMENT TO USE PARALLELIZATION
+                        conn_thrall = mysql_login(dbname);
 
                         % Notify main thread of progress
                         progress_bar_data = parameters;
