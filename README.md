@@ -20,4 +20,4 @@ In MAIN_simulator_v2.m, there is a large section named Configurations. There you
 Hexgrids offer a more robust way of viewing tradeoffs being variables with TODDM (see paper this code is a reference for), and since they are specifically designed, they will ONLY work with TODDM systems ("system_name = 'TODDM'"). Hexgrid plots function a bit differently, where there is no parametric sweep and 'configs' is defined by a special function. There also aren't any visualization settings, as a simple colorbar is all you can really change and the current one feels more fitting and easiest to read.
 
 ## Further Questions
-For any questions please contact jrwimer@uark.edu or visit jrw-lab.github.io.
+For any questions please contact jrwimer@uark.edu or visit [my website](https://jrw-lab.github.io). 
