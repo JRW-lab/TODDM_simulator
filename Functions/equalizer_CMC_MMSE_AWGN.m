@@ -1,26 +1,15 @@
-function x_hat = OTFS_pulse_equalizer_v2(y_tilde,H_tilde,N,M,Lp,Ln,Es,N0,S,N_iters,R)
+function [x_hat,iters] = equalizer_CMC_MMSE_AWGN(y_tilde,H_tilde,N,M,Lp,Ln,Es,N0,S,N_iters)
 
 % Find all possible Lambda_n matrices and Theta_n matrices
 possible_Lambda_n = zeros(N*M,N);
-possible_Theta_n = zeros(N*M,N);
 for n = 0:M-1
     Lambda_n = zeros(N);
-    Theta_n = zeros(N);
     for l = Ln:Lp
         selected_H_block1 = H_tilde((mod(n+l,M)*N)+1:(mod(n+l,M)+1)*N,(n*N)+1:(n+1)*N);
         Lambda_n_add = selected_H_block1' * selected_H_block1;
         Lambda_n = Lambda_n + Lambda_n_add;
-
-        for g = Ln:Lp
-            selected_H_block2 = H_tilde((mod(n+g,M)*N)+1:(mod(n+g,M)+1)*N,(n*N)+1:(n+1)*N);
-            selected_R_block = R((mod(n+l,M)*N)+1:(mod(n+l,M)+1)*N,(mod(n+g,M)*N)+1:(mod(n+g,M)+1)*N);
-            Theta_n_add = selected_H_block1' * selected_R_block * selected_H_block2;
-            Theta_n = Theta_n + Theta_n_add;
-        end
-
     end
     possible_Lambda_n((n*N)+1:(n+1)*N,:) = Lambda_n;
-    possible_Theta_n((n*N)+1:(n+1)*N,:) = Theta_n;
 end
 
 % Predefine variables and start iterator equalizer
@@ -70,10 +59,9 @@ while iters < N_iters && flag_detector
 
         % Select Lambda_n from possible matrices
         Lambda_n = possible_Lambda_n((n*N)+1:(n+1)*N,:);
-        Theta_n = possible_Theta_n((n*N)+1:(n+1)*N,:);
 
         % Create MMSE matrix for iterative solver
-        W_n = Lambda_n' / (Lambda_n*Lambda_n' + (N0/Es)*Theta_n);
+        W_n = Lambda_n' * pinv(Lambda_n*Lambda_n' + (N0/Es)*Lambda_n);
 
         % Create x_hat for current block and push to stack
         x_hat_n = W_n * gamma_n;

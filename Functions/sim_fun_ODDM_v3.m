@@ -72,7 +72,7 @@ for frame = 1:new_frames
     yDD = HDD * xDD + zDD;
 
     % Equalize received signal
-    x_hat = OTFS_pulse_equalizer_AWGN(yDD,HDD,N,M,L2,-L1,Es,N0,S,N_iters);
+    x_hat = equalizer_CMC_MMSE_AWGN(yDD,HDD,N,M,L2,-L1,Es,N0,S,N_iters);
 
     % Hard detection for final x_hat
     dist = abs(x_hat.' - S).^2;

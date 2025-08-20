@@ -184,7 +184,7 @@ for frame = 1:new_frames
     y_tilde = H_tilde * x_tilde + z_tilde;
 
     % Iterative Detector - JRW
-    x_hat = OTFS_pulse_equalizer_v2(y_tilde,H_tilde,N,M,Lp,Ln,Es,N0,S,N_iters,R);
+    x_hat = equalizer_CMC_MMSE(y_tilde,H_tilde,N,M,Lp,Ln,Es,N0,S,N_iters,R);
 
     % Hard detection for final x_hat
     dist = abs(x_hat.' - S).^2;
