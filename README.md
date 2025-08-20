@@ -1,4 +1,4 @@
-# ODDM-VFR Simulator (MATLAB with SQL compatibility)
+# Common Wireless Simulator (MATLAB with SQL compatibility)
 A MATLAB-based simulator for calculating error rates in OTFS, ODDM and ODDM-VFR.
 Results can be stored either locally in an Excel file or in an SQL database.
 
