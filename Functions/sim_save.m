@@ -52,17 +52,20 @@ if run_flag
     % Simulate needed system
     switch parameters.system_name
         case "TODDM"
-            [BER,SER,FER] = sim_fun_TODDM_v3(new_frames,parameters);
+            metrics = sim_fun_TODDM_v3(new_frames,parameters);
         case "ODDM"
-            [BER,SER,FER] = sim_fun_ODDM_v3(new_frames,parameters);
+            metrics = sim_fun_ODDM_v3(new_frames,parameters);
         case "OTFS"
-            [BER,SER,FER] = sim_fun_OTFS_v3(new_frames,parameters);
+            metrics = sim_fun_OTFS_v3(new_frames,parameters);
     end
 
     % Stack metrics to be saved
-    metrics_add.BER = BER;
-    metrics_add.SER = SER;
-    metrics_add.FER = FER;
+    metrics_add.BER = metrics.BER;
+    metrics_add.SER = metrics.SER;
+    metrics_add.FER = metrics.FER;
+    metrics_add.FER = metrics.RX_iters;
+    metrics_add.FER = metrics.t_RXiter;
+    metrics_add.FER = metrics.t_RXfull;
 
     % Write to database
     switch save_data.priority

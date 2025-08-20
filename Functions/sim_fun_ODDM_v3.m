@@ -1,4 +1,4 @@
-function [BER,SER,FER] = sim_fun_ODDM_v3(new_frames,parameters)
+function metrics = sim_fun_ODDM_v3(new_frames,parameters)
 
 % Make parameters
 fields = fieldnames(parameters);
@@ -72,7 +72,12 @@ for frame = 1:new_frames
     yDD = HDD * xDD + zDD;
 
     % Equalize received signal
-    x_hat = equalizer_CMC_MMSE_AWGN(yDD,HDD,N,M,L2,-L1,Es,N0,S,N_iters);
+    switch receiver_name
+        case "CMC_MMSE"
+            [x_hat,iters,t_RXiter,t_RXfull] = equalizer_CMC_MMSE_AWGN(yDD,HDD,N,M,L2,-L1,Es,N0,S,N_iters);
+        case "MMSE"
+            [x_hat,iters,t_RXiter,t_RXfull] = equalizer_MMSE(yDD,HDD,Es,N0);
+    end
 
     % Hard detection for final x_hat
     dist = abs(x_hat.' - S).^2;
@@ -94,6 +99,9 @@ for frame = 1:new_frames
 end
 
 % Calculate BER, SER and FER
-BER = sum(bit_errors,"all") / (new_frames*syms_per_f*log2(M_ary));
-SER = sum(sym_errors,"all") / (new_frames*syms_per_f);
-FER = sum(frm_errors,"all") / (new_frames);
+metrics.BER = sum(bit_errors,"all") / (new_frames*syms_per_f*log2(M_ary));
+metrics.SER = sum(sym_errors,"all") / (new_frames*syms_per_f);
+metrics.FER = sum(frm_errors,"all") / (new_frames);
+metrics.RX_iters = iters;
+metrics.t_RXiter = t_RXiter;
+metrics.t_RXfull = t_RXfull;

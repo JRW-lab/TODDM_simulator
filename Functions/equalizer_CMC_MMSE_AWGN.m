@@ -1,4 +1,7 @@
-function [x_hat,iters] = equalizer_CMC_MMSE_AWGN(y_tilde,H_tilde,N,M,Lp,Ln,Es,N0,S,N_iters)
+function [x_hat,iters,t_RXiter,t_RXfull] = equalizer_CMC_MMSE_AWGN(y_tilde,H_tilde,N,M,Lp,Ln,Es,N0,S,N_iters)
+
+% Start runtime
+tStartRX = tic;
 
 % Find all possible Lambda_n matrices and Theta_n matrices
 possible_Lambda_n = zeros(N*M,N);
@@ -16,8 +19,12 @@ end
 x_hat = zeros(N*M,1);
 flag_detector = true;
 iters = 0;
+iter_runtimes = [];
 while iters < N_iters && flag_detector
     iters = iters + 1;
+
+    % Start runtime
+    tStartRXiter = tic;
 
     % Sweep through all M blocks of y_tilde (size Nx1)
     for n = 0:M-1
@@ -84,4 +91,13 @@ while iters < N_iters && flag_detector
 
     % Save last x_hat
     last_x_hat = x_hat;
+
+    % Stop runtime
+    t_RXiter = toc(tStartRXiter);
+    iter_runtimes = [iter_runtimes t_RXiter]; %#ok<AGROW>
+
 end
+
+% Stop runtime
+t_RXiter = mean(iter_runtimes);
+t_RXfull = toc(tStartRX);

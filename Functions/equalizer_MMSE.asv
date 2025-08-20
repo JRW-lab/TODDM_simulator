@@ -8,6 +8,7 @@ A = H' * H + (N0/Es) * eye(length(y));
 L = chol(A,"lower");
 b = H' * y;
 x_hat = L'\(L\b);
+ = W_mmse * y;
 
 % Stop runtime
 t_RXiter = toc(tStartRXiter);

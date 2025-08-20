@@ -1,4 +1,4 @@
-function [BER,SER,FER] = sim_fun_OTFS_v3(new_frames,parameters)
+function metrics = sim_fun_OTFS_v3(new_frames,parameters)
 
 % Make parameters
 fields = fieldnames(parameters);
@@ -70,7 +70,7 @@ if isempty(load_test)
             ambig_t_range = linspace(-ambig_t_lim,ambig_t_lim,ambig_res);
             ambig_f_range = linspace(-ambig_f_lim,ambig_f_lim,ambig_res);
             ambig_vals = zeros(ambig_res);
-            update_vals = floor(length(ambig_t_range)*(linspace(.01,.99,34)));
+            % update_vals = floor(length(ambig_t_range)*(linspace(.01,.99,34)));
             for k = 1:length(ambig_t_range)
                 for l = 1:length(ambig_f_range)
                     ambig_vals(k,l) = ambig_direct(ambig_t_range(k),ambig_f_range(l),Ts,shape,alpha,q,ambig_res);
@@ -184,7 +184,12 @@ for frame = 1:new_frames
     y_tilde = H_tilde * x_tilde + z_tilde;
 
     % Iterative Detector - JRW
-    x_hat = equalizer_CMC_MMSE(y_tilde,H_tilde,N,M,Lp,Ln,Es,N0,S,N_iters,R);
+    switch receiver_name
+        case "CMC_MMSE"
+            [x_hat,iters,t_RXiter,t_RXfull] = equalizer_CMC_MMSE(y_tilde,H_tilde,N,M,Lp,Ln,Es,N0,S,N_iters,R);
+        case "MMSE"
+            [x_hat,iters,t_RXiter,t_RXfull] = equalizer_MMSE(y_tilde,H_tilde,Es,N0);
+    end
 
     % Hard detection for final x_hat
     dist = abs(x_hat.' - S).^2;
@@ -208,6 +213,9 @@ for frame = 1:new_frames
 end
 
 % Calculate BER, SER and FER
-BER = sum(bit_errors,"all") / (new_frames*syms_per_f*log2(M_ary));
-SER = sum(sym_errors,"all") / (new_frames*syms_per_f);
-FER = sum(frm_errors,"all") / (new_frames);
+metrics.BER = sum(bit_errors,"all") / (new_frames*syms_per_f*log2(M_ary));
+metrics.SER = sum(sym_errors,"all") / (new_frames*syms_per_f);
+metrics.FER = sum(frm_errors,"all") / (new_frames);
+metrics.RX_iters = iters;
+metrics.t_RXiter = t_RXiter;
+metrics.t_RXfull = t_RXfull;
