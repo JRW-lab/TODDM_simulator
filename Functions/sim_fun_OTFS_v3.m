@@ -141,6 +141,9 @@ end
 bit_errors = zeros(new_frames,syms_per_f*log2(M_ary));
 sym_errors = zeros(new_frames,syms_per_f);
 frm_errors = zeros(new_frames,1);
+iters_vec = zeros(new_frames,1);
+t_RXiter_vec = zeros(new_frames,1);
+t_RXfull_vec = zeros(new_frames,1);
 
 % Simulation loop
 for frame = 1:new_frames
@@ -152,10 +155,11 @@ for frame = 1:new_frames
     x_tilde = Gamma_MN' * x_DD;
 
     % Generate channel
+    t_offset = 2 * max_timing_offset * Ts * (rand - 0.5);
     [chn_g,chn_tau,chn_v] = channel_generation(Fc,vel);
     if shape == "rect" % rectangular ambiguity is closed form
         % Create H Matrix
-        H = gen_H(T,N,M,Lp,Ln,chn_g,chn_tau,chn_v,shape,alpha);
+        H = gen_H(T,N,M,Lp,Ln,chn_g,chn_tau,chn_v,shape,alpha,t_offset);
     else
         % Normalize tau and v to cohere with discrete ambig values
         chn_tau = round(chn_tau/res_chn_tau)*res_chn_tau;
@@ -163,7 +167,7 @@ for frame = 1:new_frames
 
         % Find direct tap indices and tap values
         l = (Ln:Lp).';
-        tap_t_range = (l*Ts - chn_tau) .* ones(Lp-Ln+1,length(chn_g),N*M);
+        tap_t_range = (l*Ts - chn_tau + t_offset) .* ones(Lp-Ln+1,length(chn_g),N*M);
         tap_f_range = (ones(Lp-Ln+1,1) .* chn_v) .* ones(Lp-Ln+1,length(chn_g),N*M);
         tap_t_range = round(tap_t_range ./ res_chn_tau) + ceil(length(ambig_t_range)/2);
         tap_f_range = round(tap_f_range ./ res_chn_v) + ceil(length(ambig_f_range)/2);
@@ -185,10 +189,12 @@ for frame = 1:new_frames
 
     % Iterative Detector - JRW
     switch receiver_name
-        case "CMC_MMSE"
-            [x_hat,iters,t_RXiter,t_RXfull] = equalizer_CMC_MMSE(y_tilde,H_tilde,N,M,Lp,Ln,Es,N0,S,N_iters,R);
+        case "CMC-MMSE"
+            [x_hat,iters_vec(frame),t_RXiter_vec(frame),t_RXfull_vec(frame)] = equalizer_CMC_MMSE(y_tilde,H_tilde,N,M,Lp,Ln,Es,N0,S,N_iters,R);
         case "MMSE"
-            [x_hat,iters,t_RXiter,t_RXfull] = equalizer_MMSE(y_tilde,H_tilde,Es,N0);
+            [x_hat,iters_vec(frame),t_RXiter_vec(frame),t_RXfull_vec(frame)] = equalizer_MMSE(y_tilde,H_tilde,Es,N0);
+        otherwise
+            error("Unsupported receiver for the simulated system!")
     end
 
     % Hard detection for final x_hat
@@ -212,10 +218,15 @@ for frame = 1:new_frames
 
 end
 
+% Get parameters for throughput
+frame_duration = N * T;
+bandwidth_hz = M / T;
+
 % Calculate BER, SER and FER
 metrics.BER = sum(bit_errors,"all") / (new_frames*syms_per_f*log2(M_ary));
 metrics.SER = sum(sym_errors,"all") / (new_frames*syms_per_f);
 metrics.FER = sum(frm_errors,"all") / (new_frames);
-metrics.RX_iters = iters;
-metrics.t_RXiter = t_RXiter;
-metrics.t_RXfull = t_RXfull;
+metrics.Thr = (log2(M_ary) * syms_per_f * (1 - metrics.FER)) / (frame_duration * bandwidth_hz);
+metrics.RX_iters = mean(iters_vec);
+metrics.t_RXiter = mean(t_RXiter_vec);
+metrics.t_RXfull = mean(t_RXfull_vec);

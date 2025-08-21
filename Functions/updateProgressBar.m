@@ -3,6 +3,18 @@ function updateProgressBar(d)
     if ~isfield(d, 'U')
         d.U = 1;
     end
+    if ~isfield(d, 'N')
+        d.N = 1;
+    end
+    if ~isfield(d, 'shape')
+        d.shape = "ideal";
+    end
+    if ~isfield(d, 'alpha')
+        d.alpha = NaN;
+    end
+    if ~isfield(d, 'Q')
+        d.Q = NaN;
+    end
 
     % Create variables
     config_count = (d.primvar_sel - 1) * d.conf_len + d.sel;

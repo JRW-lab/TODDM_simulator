@@ -1,7 +1,4 @@
-function sim_save(save_data,conn,table_name,current_frames,parameters)
-
-% Function setup
-[~,paramHash] = jsonencode_sorted(parameters);
+function sim_save(save_data,conn,table_name,current_frames,parameters,paramHash)
 
 % Load data from DB and set new frame count
 switch save_data.priority
@@ -52,20 +49,14 @@ if run_flag
     % Simulate needed system
     switch parameters.system_name
         case "TODDM"
-            metrics = sim_fun_TODDM_v3(new_frames,parameters);
+            metrics_add = sim_fun_TODDM_v3(new_frames,parameters);
         case "ODDM"
-            metrics = sim_fun_ODDM_v3(new_frames,parameters);
+            metrics_add = sim_fun_ODDM_v3(new_frames,parameters);
         case "OTFS"
-            metrics = sim_fun_OTFS_v3(new_frames,parameters);
+            metrics_add = sim_fun_OTFS_v3(new_frames,parameters);
+        case "OFDM"
+            metrics_add = sim_fun_OFDM_v2(new_frames,parameters);
     end
-
-    % Stack metrics to be saved
-    metrics_add.BER = metrics.BER;
-    metrics_add.SER = metrics.SER;
-    metrics_add.FER = metrics.FER;
-    metrics_add.FER = metrics.RX_iters;
-    metrics_add.FER = metrics.t_RXiter;
-    metrics_add.FER = metrics.t_RXfull;
 
     % Write to database
     switch save_data.priority

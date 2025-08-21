@@ -1,4 +1,4 @@
-function [HDD,L1,L2] = gen_HDD_triorth(U,N,M,T,Q,Fc,vel,Ambig_Table)
+function [HDD,L1,L2] = gen_HDD_triorth(U,N,M,T,Q,Fc,vel,Ambig_Table,t_offset)
 
 % Parameters
 Ts = T / M;
@@ -13,25 +13,13 @@ u_vec = repmat((0:U-1).',M,1);
 m_vec = repelem((0:M-1),1,U).';
 indices_base = m_vec*N*U + u_vec;
 
-% % Begin progress bar
-% fprintf("Generating discrete channel matrix...\n")
-% update_vals = floor(N*N*(linspace(0.01,1,34)));
-% fprintf("Progress:                        |\n")
-% count = 0;
-
 % Loop through all u,v pairs
 HDD = zeros(M*N*U);
 for n = 0:N-1
     for k = 0:N-1
-        
-%         % Increment progress bar
-%         count = count + 1;
-%         if ismember(count,update_vals)
-%             fprintf("x")
-%         end
 
         % Generate H matrix block
-        HDD_new = gen_Hblock(U,M,Ts,Phi_i,tau_i,v_i,L1,L2,Ambig_Table.vals{n+1,k+1},Ambig_Table.t_range,Ambig_Table.f_range);
+        HDD_new = gen_Hblock(U,M,Ts,Phi_i,tau_i,v_i,L1,L2,Ambig_Table.vals{n+1,k+1},Ambig_Table.t_range,Ambig_Table.f_range,t_offset);
 
         % M -> N -> U index assignment
         indices1 = indices_base + k*U + 1;
@@ -42,11 +30,10 @@ for n = 0:N-1
 
     end
 end
-% fprintf("\n")
 
 end
 
-function H_block = gen_Hblock(U,M,Ts,Phi_i,tau_i,v_i,L1,L2,ambig_vals,ambig_t_range,ambig_f_range)
+function H_block = gen_Hblock(U,M,Ts,Phi_i,tau_i,v_i,L1,L2,ambig_vals,ambig_t_range,ambig_f_range,t_offset)
 % This generates the delay-frequency channel matrix for an ODDM system
 % INPUTS:
 %   U:              number of frequency taps
@@ -87,12 +74,8 @@ l = needed_combos(:,3);
 v = needed_combos(:,4);
 
 % Find indices in ambiguity values corresponding with the coefficient eq.
-ambig_t_locs = (l-m).*Ts - tau_i;
+ambig_t_locs = (l-m).*Ts - tau_i + t_offset;
 ambig_f_locs = (v-u).*Fs - v_i;
-% ambig_t_indices = knnsearch(ambig_t_range(:), ambig_t_locs(:));
-% ambig_f_indices = knnsearch(ambig_f_range(:), ambig_f_locs(:));
-% ambig_t_indices = reshape(ambig_t_indices, size(ambig_t_locs));
-% ambig_f_indices = reshape(ambig_f_indices, size(ambig_f_locs));
 
 tIdxInterp = griddedInterpolant(ambig_t_range   , 1:numel(ambig_t_range), ...
                                 'nearest','nearest');
@@ -110,7 +93,7 @@ linear_indices = sub2ind(size(ambig_vals), ambig_t_indices, ambig_f_indices);
 ambig_inst = ambig_vals(linear_indices);
 
 % Define all elements of h summation, then sum across 2nd dimension
-h_sum = Phi_i .* exp(1j.*2.*pi.*(v_i + u.*Fs).*(l.*Ts-tau_i)) .* ambig_inst;
+h_sum = Phi_i .* exp(1j.*2.*pi.*(v_i + u.*Fs).*(l.*Ts-tau_i+t_offset)) .* ambig_inst;
 h = sum(h_sum,2);
 
 % Find all linear indices for H matrix

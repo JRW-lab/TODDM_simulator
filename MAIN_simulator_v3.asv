@@ -13,7 +13,7 @@ save_data.save_excel = true;
 save_data.save_mysql = false;
 create_database_tables = false;
 dbname     = 'comm_database';
-table_name = "sim_results_new";
+table_name = "sim_results";
 
 % Set paths and data
 addpath(fullfile(pwd, 'Common Functions'));
@@ -25,12 +25,16 @@ save_data.excel_path = fullfile(save_data.excel_folder,save_data.excel_name + ".
 
 % Profile names (for profile selector)
 profile_names = {
-    "Profile 1"
+    "BER - System Comparison (max(M) = 128, N = 16)"
+    "BER - M/U Comparison (max(M) = 128, N = 16)"
+    "Thr - Subcarrier Spacing Comparison (15-480kHz)"
+    "BER - Hexgrid (2048 symbols, Eb/N0=24dB)"
+    "BER - Hexgrid (4096 symbols, Eb/N0=24dB)"
     };
 [profile_sel,num_frames] = profile_select(profile_names,true);
 
 % Set number of frames per iteration
-frames_per_iter = 1000;
+frames_per_iter = 10;
 if num_frames <= 0
     % Settings
     render_figure = true;
@@ -50,10 +54,11 @@ switch profile_sel
         data_type = "BER";
         primary_var = "EbN0";
         primary_vals = 9:3:24;
+        title_vars = ["T","N","vel"];
         default_parameters = struct(...
-            'system_name', "OFDM",...
-            'receiver_name', "DD-BDFE",...
-            'max_timing_offset', 0.0,...
+            'system_name', "TODDM",...
+            'receiver_name', "CMC_MMSE",...
+            'timing'
             'M_ary', 4, ...
             'EbN0', 18, ...
             'M', 16, ...
@@ -64,19 +69,180 @@ switch profile_sel
             'vel', 500, ...
             'shape', "rrc", ...
             'alpha', 0.4, ...
-            'Q', 2);
+            'Q', 8);
         configs = {
-            struct()
+            struct('system_name', "OTFS", 'M', 128, 'U', 1)
+            struct('system_name', "ODDM", 'M', 128, 'U', 1)
+            struct('system_name', "TODDM", 'M', 128, 'U', 1)
+            struct('system_name', "TODDM", 'M', 64, 'U', 2)
+            struct('system_name', "TODDM", 'M', 32, 'U', 4)
             };
         legend_vec = {
-            ""
+            "OTFS, M = 128"
+            "ODDM, M = 128"
+            "TODDM, M = 128, U = 1"
+            "TODDM, M = 64, U = 2"
+            "TODDM, M = 32, U = 4"
             };
         line_styles = {
             "-*"
+            "-o"
+            "-^"
+            "--^"
+            "-.^"
             };
         line_colors = {...
             "#FF0000"
+            "#0F62FE"
+            "#000000"
+            "#000000"
+            "#000000"
             };
+
+    case 2
+        % PROFILE 2
+        vis_type = "figure";
+        data_type = "BER";
+        primary_var = "EbN0";
+        primary_vals = 9:3:24;
+        title_vars = ["N","alpha","Q"];
+        default_parameters = struct(...
+            'system_name', "TODDM",...
+            'M_ary', 4, ...
+            'EbN0', 18, ...
+            'M', 1024, ...
+            'N', 16, ...
+            'U', 1, ...
+            'T', 1 / 15000, ...
+            'Fc', 4e9, ...
+            'vel', 500, ...
+            'shape', "rrc", ...
+            'alpha', 1, ...
+            'Q', 2);
+        configs = {
+            struct('M', 128, 'U', 1)
+            struct('M', 64, 'U', 2)
+            struct('M', 32, 'U', 4)
+            struct('M', 16, 'U', 8)
+            };
+        legend_vec = {
+            "M=128, U=1"
+            "M=64, U=2"
+            "M=32, U=4"
+            "M=16, U=8"
+            };
+        line_styles = {
+            "-o"
+            "-+"
+            "-*"
+            "-x"
+            };
+        line_colors = {
+            "#FF0000"
+            "#0F62FE"
+            "#24A249"
+            "#4C00C6"
+            };
+
+    case 3
+        % PROFILE 3
+        vis_type = "figure";
+        data_type = "Thr";
+        primary_var = "EbN0";
+        primary_vals = 6:3:21;
+        title_vars = ["M","N","U","alpha"];
+        default_parameters = struct(...
+            'system_name', "TODDM",...
+            'M_ary', 4, ...
+            'EbN0', 18, ...
+            'M', 64, ...
+            'N', 16, ...
+            'U', 2, ...
+            'T', 1 / 15000, ...
+            'Fc', 4e9, ...
+            'vel', 500, ...
+            'shape', "rrc", ...
+            'alpha', 0.4, ...
+            'Q', 8);
+        configs = {
+            struct('T',1/15000)
+            struct('T',1/30000)
+            struct('T',1/60000)
+            struct('T',1/120000)
+            struct('T',1/240000)
+            };
+        legend_vec = {
+            "\Deltaf = 15kHz"
+            "\Deltaf = 30kHz"
+            "\Deltaf = 60kHz"
+            "\Deltaf = 120kHz"
+            "\Deltaf = 240kHz"
+            };
+        line_styles = {
+            "-o"
+            "-+"
+            "-*"
+            "-x"
+            "-^"
+            };
+        line_colors = {
+            "#FF0000"
+            "#0F62FE"
+            "#24A249"
+            "#4C00C6"
+            "#00CAFF"
+            };
+
+    case 4
+        % PROFILE 4
+        vis_type = "hexgrid";
+        data_type = "BER";
+        primary_var = "EbN0";
+        primary_vals = 24;
+        title_vars = ["T","N","vel"];
+        default_parameters = struct(...
+            'system_name', "TODDM",...
+            'M_ary', 4, ...
+            'EbN0', 18, ...
+            'M', 1024, ...
+            'N', 32, ...
+            'U', 1, ...
+            'T', 1 / 15000, ...
+            'Fc', 4e9, ...
+            'vel', 500, ...
+            'shape', "rrc", ...
+            'alpha', 0.4, ...
+            'Q', 8);
+        % configs = gen_hexgrid_configs(2048, 32, 2, 1);
+        configs = gen_hexgrid_configs(1024, 32, 2, 1);
+        legend_vec = {};
+        line_styles = {};
+        line_colors = {};
+
+    case 5
+        % PROFILE 5
+        vis_type = "hexgrid";
+        data_type = "BER";
+        primary_var = "EbN0";
+        primary_vals = 24;
+        title_vars = ["T","N","vel"];
+        default_parameters = struct(...
+            'system_name', "TODDM",...
+            'M_ary', 4, ...
+            'EbN0', 18, ...
+            'M', 1024, ...
+            'N', 32, ...
+            'U', 1, ...
+            'T', 1 / 15000, ...
+            'Fc', 4e9, ...
+            'vel', 500, ...
+            'shape', "rrc", ...
+            'alpha', 0.4, ...
+            'Q', 8);
+        configs = gen_hexgrid_configs(4096, 32, 2, 1);
+        legend_vec = {};
+        line_styles = {};
+        line_colors = {};
 end
 
 %% Simulation setup
@@ -168,7 +334,6 @@ end
 % Make parameters
 system_names = cell(prvr_len,conf_len);
 params_cell = cell(prvr_len,conf_len);
-hash_cell = cell(prvr_len,conf_len);
 prior_frames = zeros(length(primary_vals),length(configs));
 for primvar_sel = 1:prvr_len
 
@@ -203,12 +368,6 @@ for primvar_sel = 1:prvr_len
             parameters = rmfield(parameters, 'U');
         elseif system_names{primvar_sel,sel} == "OTFS"
             parameters = rmfield(parameters, 'U');
-        elseif system_names{primvar_sel,sel} == "OFDM"
-            parameters = rmfield(parameters, 'N');
-            parameters = rmfield(parameters, 'U');
-            parameters = rmfield(parameters, 'shape');
-            parameters = rmfield(parameters, 'alpha');
-            parameters = rmfield(parameters, 'Q'); 
         end
 
         % Add parameters to stack
@@ -221,9 +380,6 @@ for primvar_sel = 1:prvr_len
         catch
             sim_result = [];
         end
-
-        % Save parameter hash
-        hash_cell{primvar_sel,sel} = paramHash;
 
         % Set prior frames
         if ~isempty(sim_result)
@@ -266,9 +422,8 @@ if ~skip_simulations
             parfor primvar_sel = 1:prvr_len
                 for sel = 1:conf_len
 
-                    % Select parameters and hash
+                    % Select parameters
                     parameters = params_cell{primvar_sel,sel};
-                    paramHash = hash_cell{primvar_sel,sel};
 
                     % Continue to simulate if need more frames
                     if current_frames > prior_frames(primvar_sel,sel)
@@ -290,7 +445,7 @@ if ~skip_simulations
                         send(dq, progress_bar_data);
 
                         % Simulate under current settings
-                        sim_save(save_data,conn_thrall,table_name,current_frames,parameters,paramHash);
+                        sim_save(save_data,conn_thrall,table_name,current_frames,parameters);
 
                         % Close connection instance
                         close(conn_thrall)
@@ -306,7 +461,6 @@ if ~skip_simulations
 
                     % Select parameters
                     parameters = params_cell{primvar_sel,sel};
-                    paramHash = hash_cell{primvar_sel,sel};
 
                     % Continue to simulate if need more frames
                     if current_frames > prior_frames(primvar_sel,sel)
@@ -325,7 +479,7 @@ if ~skip_simulations
                         send(dq, progress_bar_data);
 
                         % Simulate under current settings
-                        sim_save(save_data,conn_thrall,table_name,current_frames,parameters,paramHash);
+                        sim_save(save_data,conn_thrall,table_name,current_frames,parameters);
 
                     end
                 end
@@ -340,6 +494,7 @@ end
 figure_data.data_type = data_type;
 figure_data.primary_var = primary_var;
 figure_data.primary_vals = primary_vals;
+figure_data.title_vars = title_vars;
 figure_data.legend_vec = legend_vec;
 figure_data.line_styles = line_styles;
 figure_data.line_colors = line_colors;
@@ -353,7 +508,7 @@ if render_figure
     clf
     switch vis_type
         case "figure"
-            gen_figure_v2(save_data,conn_local,table_name,hash_cell,configs,figure_data);
+            gen_figure_v2(save_data,conn_local,table_name,default_parameters,configs,figure_data);
         case "hexgrid"
             gen_hex_layout(save_data,conn_local,table_name,default_parameters,configs,figure_data);
     end

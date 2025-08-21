@@ -56,6 +56,9 @@ end
 bit_errors = zeros(new_frames,syms_per_f*log2(M_ary));
 sym_errors = zeros(new_frames,syms_per_f);
 frm_errors = zeros(new_frames,1);
+iters_vec = zeros(new_frames,1);
+t_RXiter_vec = zeros(new_frames,1);
+t_RXfull_vec = zeros(new_frames,1);
 
 for frame = 1:new_frames
 
@@ -63,7 +66,8 @@ for frame = 1:new_frames
     [TX_bit,TX_sym,xDD] = gen_data(bit_order,S,syms_per_f);
 
     % Generate H matrix and channel information
-    [HDD,L1,L2] = gen_HDD_direct(T,N,M,Fc,vel,Q,Ambig_Table);
+    t_offset = 2 * max_timing_offset * Ts * (rand - 0.5);
+    [HDD,L1,L2] = gen_HDD_direct(T,N,M,Fc,vel,Q,Ambig_Table,t_offset);
 
     % Generate noise
     zDD = sqrt(N0/2) * (randn(syms_per_f,1) + 1j*randn(syms_per_f,1));
@@ -73,10 +77,12 @@ for frame = 1:new_frames
 
     % Equalize received signal
     switch receiver_name
-        case "CMC_MMSE"
-            [x_hat,iters,t_RXiter,t_RXfull] = equalizer_CMC_MMSE_AWGN(yDD,HDD,N,M,L2,-L1,Es,N0,S,N_iters);
+        case "CMC-MMSE"
+            [x_hat,iters_vec(frame),t_RXiter_vec(frame),t_RXfull_vec(frame)] = equalizer_CMC_MMSE_AWGN(yDD,HDD,N,M,L2,-L1,Es,N0,S,N_iters);
         case "MMSE"
-            [x_hat,iters,t_RXiter,t_RXfull] = equalizer_MMSE(yDD,HDD,Es,N0);
+            [x_hat,iters_vec(frame),t_RXiter_vec(frame),t_RXfull_vec(frame)] = equalizer_MMSE(yDD,HDD,Es,N0);
+        otherwise
+            error("Unsupported receiver for the simulated system!")
     end
 
     % Hard detection for final x_hat
@@ -98,10 +104,15 @@ for frame = 1:new_frames
 
 end
 
+% Get parameters for throughput
+frame_duration = N * T;
+bandwidth_hz = M / T;
+
 % Calculate BER, SER and FER
 metrics.BER = sum(bit_errors,"all") / (new_frames*syms_per_f*log2(M_ary));
 metrics.SER = sum(sym_errors,"all") / (new_frames*syms_per_f);
 metrics.FER = sum(frm_errors,"all") / (new_frames);
-metrics.RX_iters = iters;
-metrics.t_RXiter = t_RXiter;
-metrics.t_RXfull = t_RXfull;
+metrics.Thr = (log2(M_ary) * syms_per_f * (1 - metrics.FER)) / (frame_duration * bandwidth_hz);
+metrics.RX_iters = mean(iters_vec);
+metrics.t_RXiter = mean(t_RXiter_vec);
+metrics.t_RXfull = mean(t_RXfull_vec);

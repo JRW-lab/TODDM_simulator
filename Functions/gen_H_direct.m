@@ -1,4 +1,4 @@
-function H = gen_H_direct(T,N,M,Lp,Ln,chn_g,chn_v,ambig_table,tap_t_range,tap_f_range)
+function H = gen_H_direct(T,N,M,Lp,Ln,chn_g,chn_v,ambig_table,tap_t_range,tap_f_range,t_offset)
 % This generates the time-domain channel matrix for an OTFS system
 % INPUTS:
 %   Fc: carrier frequency
@@ -8,20 +8,6 @@ function H = gen_H_direct(T,N,M,Lp,Ln,chn_g,chn_v,ambig_table,tap_t_range,tap_f_
 %   M:  number of subcarriers
 %
 % Coded by Jeremiah Rhys Wimer, 3/24/2024
-
-% rng('default');
-
-% % Debugging inputs
-% clear; clc;
-% obj = comms_obj_OTFS;
-% Fc = obj.Fc;
-% v = obj.v_vel;
-% df = obj.sbcar_spacing;
-% N = 4;
-% M = 4;
-% shape = "rrc";
-% alpha = 1;
-% q = 1;
 
 % Internal settings
 Ts = T / M;
@@ -37,7 +23,7 @@ l = (Ln:Lp).';
 
 % Make all possible exponential values for h
 k = reshape(0:(N*M-1), [1, 1, N*M]);
-exp_vals = exp(1j.*2.*pi.*chn_v.*(k-l).*Ts);
+exp_vals = exp(1j.*2.*pi.*chn_v.*((k-l).*Ts + t_offset));
 
 % Make ambiguity values and sum to make h
 ambig_vals = 0 * tap_t_range;

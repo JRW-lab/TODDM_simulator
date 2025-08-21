@@ -1,4 +1,4 @@
-function [H,L1,L2,Phi_i,tau_i,v_i] = gen_HDD_direct(T,N,M,Fc,v,Q,Ambig_Table)
+function [H,L1,L2,Phi_i,tau_i,v_i] = gen_HDD_direct(T,N,M,Fc,v,Q,Ambig_Table,t_offset)
 % This generates the delay-Doppler channel matrix for an ODDM system
 % INPUTS:
 %   T:              Symbol interval
@@ -47,7 +47,7 @@ l = needed_combos(:,3);
 k = needed_combos(:,4);
 
 % Find indices in ambiguity values corresponding with the coefficient eq.
-ambig_t_locs = (l-m).*Ts - tau_i;
+ambig_t_locs = (l-m).*Ts - tau_i + t_offset;
 ambig_t_indices = knnsearch(ambig_t_range(:), ambig_t_locs(:));
 ambig_t_indices = reshape(ambig_t_indices, size(ambig_t_locs));
 ambig_f_locs = (k-n).*F0 - v_i;
@@ -59,7 +59,7 @@ linear_indices = sub2ind(size(ambig_vals), ambig_t_indices, ambig_f_indices);
 ambig_inst = ambig_vals(linear_indices);
 
 % Define all elements of h summation, then sum across 2nd dimension
-h_sum = exp(-1j.*2.*pi.*n.*m./(N.*M)) .* Phi_i .* exp(1j.*2.*pi.*(v_i + n.*F0).*(l.*Ts-tau_i)) .* ambig_inst;
+h_sum = exp(-1j.*2.*pi.*n.*m./(N.*M)) .* Phi_i .* exp(1j.*2.*pi.*(v_i + n.*F0).*(l.*Ts-tau_i+t_offset)) .* ambig_inst;
 h = sum(h_sum,2);
 
 % Find all linear indices for H matrix
