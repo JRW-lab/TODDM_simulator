@@ -6,6 +6,11 @@ for i = 1:numel(fields)
     eval([fields{i} ' = parameters.(fields{i});']);
 end
 
+% Check CP requirement
+if CP
+    error("This system does not have CP support yet!")
+end
+
 % Input conversion
 obj = comms_obj;
 obj.Eb_N0_db = EbN0;

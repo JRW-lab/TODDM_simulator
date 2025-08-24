@@ -6,6 +6,11 @@ for i = 1:numel(fields)
     eval([fields{i} ' = parameters.(fields{i});']);
 end
 
+% Check CP requirement
+if CP
+    error("This system does not have CP support yet!")
+end
+
 % Cause error if settings are inconsistent with theory
 Ts = T / M;
 if 2*Q + floor(2510*10^(-9) / Ts) >= M

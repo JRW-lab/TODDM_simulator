@@ -1,4 +1,4 @@
-function [H,L1,L2,Phi_i,tau_i,v_i] = gen_HDD_direct(T,N,M,Fc,v,Q,Ambig_Table,t_offset)
+function [H,L1,L2,Phi_i,tau_i,v_i] = gen_HDD_direct(T,N,M,Fc,v,Q,Ambig_Table,t_offset,CP)
 % This generates the delay-Doppler channel matrix for an ODDM system
 % INPUTS:
 %   T:              Symbol interval
@@ -39,7 +39,9 @@ l_range = 0:(M-1);
 k_range = 0:(N-1);
 tap_combos = combvec(m_range,n_range,l_range,k_range).';
 l_minus_m = tap_combos(:,3) - tap_combos(:,1);
-needed_indices = ismember(l_minus_m,L_range);
+
+needed_indices = ismember(l_minus_m,L_range); % CHANGE FOR CP
+% needed_indices = (l_minus_m >= -L1 & l_minus_m <= L2);
 needed_combos = tap_combos(needed_indices,:);
 m = needed_combos(:,1);
 n = needed_combos(:,2);
@@ -70,3 +72,24 @@ linear_indices = sub2ind(size(H), H_index1, H_index2);
 
 % Assign values from h to the corresponding locations in H
 H(linear_indices) = h;
+
+% % ---- Map to Toeplitz matrix with CP ----
+% % Total length including CP
+% blk_len = M*N + L1 + L2;  
+% H = zeros(blk_len, blk_len);
+% 
+% % Offset for CP in the output
+% cp_offset = L1;
+% 
+% for idx = 1:length(h)
+%     % Output index (with CP offset)
+%     row = cp_offset + l(idx)*N + k(idx) + 1;
+% 
+%     % Input index
+%     col = m(idx)*N + n(idx) + 1;
+% 
+%     % Ensure row/col within block length
+%     if row <= blk_len && col <= blk_len
+%         H(row, col) = H(row, col) + h(idx);
+%     end
+% end

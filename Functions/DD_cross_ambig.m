@@ -1,4 +1,4 @@
-function Apg = DD_cross_ambig(t,f,N,M,T,shape,alpha,Q,res)
+function Apg = DD_cross_ambig(t,f,N,M,T,shape,alpha,Q,res,CP)
 % This function returns the result of the delay-Doppler domain cross
 % ambiguity function of two of the same shaped pulse filters, truncated to
 % [0 q*Ts]. Supported shapes are "rect", "sinc" and "rrc".
@@ -42,12 +42,22 @@ end
 % Change time range and phase shift according to time
 if abs(t) <= Ta
     ambig_bias = 1;
+
+    % Add exponential component if CP
+    if CP
+        exp_sum = exp_sum + exp(1j*2*pi*f*t);
+    end
 elseif abs(t-T) <= Ta
     t = t-T;
     ambig_bias = exp(1j*2*pi*T*f);
 elseif abs(t+T) <= Ta
     t = t+T;
     ambig_bias = exp(-1j*2*pi*T*f);
+
+    % Add exponential component if CP
+    if CP
+        exp_sum = exp_sum + exp(1j*2*pi*f*t);
+    end
 else
     ambig_bias = 0;
 end
@@ -60,7 +70,11 @@ if ambig_bias ~= 0
     filter_2 = gen_pulse(t_range,shape,Ts,Q,alpha);
 
     % Define integration function
-    norm_val = sqrt(sum(abs(filter_2).^2) * dt) * sqrt(N);
+    if CP
+        norm_val = sqrt(sum(abs(filter_2).^2) * dt) * sqrt(N);
+    else
+        norm_val = sqrt(sum(abs(filter_2).^2) * dt) * sqrt(N+1);
+    end
     integral_vec = conj(filter_1 / norm_val) .* (filter_2 / norm_val) .* exp(-1j.*2.*pi.*(t_range-t).*f);
     Aa = ambig_bias * sum(integral_vec.*dt,"all");
 

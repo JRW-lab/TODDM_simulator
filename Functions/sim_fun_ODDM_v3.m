@@ -50,7 +50,7 @@ elseif M_ary == 4
 end
 
 % Render ambiguity table
-[Ambig_Table.vals,Ambig_Table.t_range,Ambig_Table.f_range] = gen_DD_cross_ambig_table(N,M,T,Fc,vel,shape,alpha,Q,res);
+[Ambig_Table.vals,Ambig_Table.t_range,Ambig_Table.f_range] = gen_DD_cross_ambig_table(N,M,T,Fc,vel,shape,alpha,Q,res,CP);
 
 % Reset bit errors for each SNR
 bit_errors = zeros(new_frames,syms_per_f*log2(M_ary));
